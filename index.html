@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+		<meta name="description" content="" />
+		<meta name="author" content="" />
+		<title>ROARmania</title>
+		<link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+		<!-- Core theme CSS (includes Bootstrap)-->
+		<link href="css/styles.css" rel="stylesheet" />
+	</head>
+	<body id="page-top">
+		<!-- Navigation-->
+		<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
+			<div class="container px-4">
+				<a class="navbar-brand" href="#page-top">ROARmania</a>
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+				<div class="collapse navbar-collapse" id="navbarResponsive">
+					<ul class="navbar-nav">
+						<li class="nav-item"><a class="nav-link" href="#overview">Overview</a></li>
+						<li class="nav-item"><a class="nav-link" href="#design">Design</a></li>
+						<li class="nav-item"><a class="nav-link" href="#implementation">Implementation</a></li>
+						<li class="nav-item"><a class="nav-link" href="#results">Results</a></li>
+						<li class="nav-item"><a class="nav-link" href="#conclusion">Conclusion</a></li>
+						<li class="nav-item"><a class="nav-link" href="#team">The Team</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+
+		<!-- Header-->
+		<header class="text-white">
+			<div class="container px-4 text-center" style="padding-top: 65vh;">
+				<h1 class="fw-bolder" style="font-size: 120px">ROARmania</h1>
+				<p class="lead" style="font-size: 32px"><b>Group 29:</b> Chih-Yuan Chiu, Nima Rezaeian, Shang Ma, ZhaoDong Wei, and Mohsin Sarwari</p>
+			</div>
+		</header>
+
+		<!-- Introduction section-->
+		<section id="introduction" style="padding: 2rem;">
+			<div class="container px-2">
+				<div class="row gx-2 justify-content-left">
+					<div class="text-center">
+						<p>This website covers, in detail, the ins and outs of our final project for EECS 106A: Introduction to Robotics during the Fall 2021 semester at UC Berkeley.</p>
+						<p>Please enjoy :)</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Overview section-->
+		<section class="bg-light" id="overview">
+			<div class="container px-2">
+				<div class="row gx-2 justify-content-left">
+					<div>
+						<h2>Overview</h2>
+						<p class="par">
+							When deciding our final project, we perused through the project guidelines document to see the research and industry related options. Getting to work with the research group ROAR was the project that caught our eye. <a href="https://roar.berkeley.edu/" target="_blank">ROAR (Robot Open Autonomous Racing)</a> is a research group at Berkeley that holds an annual AI autonomous driving competition organized by the FHL ViveCenter. For each ROAR competition, student teams design perception, planning, and control algorithms to guide 1/10-scale RC race cars along a pre-specified track on the UC Berkeley campus.
+						</p>
+						<p class="par">
+							Our main concern was that the platform for ROAR, from both the software and hardware side, was pretty well established, meaning we would have to think hard to find a way in which we could contribute to the project. Our initial proposal involved multi-agent racing. We would have two teams of two ROAR cars each race against each other around the track and we would mess with different strategies and goals to create interesting behaviors in the cars. However, given the time constraint, limited hardware, and the heavy reliance on Machine Learning, we decided that this approach was infeasible for our final project.
+						</p>
+						<p class="par">
+							Instead, we stumbled upon an interesting question: what if we brought racing games like Mario Kart or Trackmania to life? Essentially, on top of racing on the lane around the track, we can add elements to the track that the cars interact with (e.g. booster patches that make the car speed up for some time). For the purposes of this project, we introduced two types of interactive elements to the track:
+						</p>
+						<ol style="padding-left:2rem;">
+							<li><b>Booster Patch</b> (represented by a white square of duct tape): Speeds up the car for a short duration of time</li>
+							<li><b>Ice Patch</b> (represented by a blue square of duct tape): Slows down the car for a short duration of time</li>
+						</ol>
+						<p>
+							Under this framework, our project fuses the design of perception, planning, and control algorithms that enable the 1/10 RC ROAR car, fondly dubbed <b>Simba</b> <i style="font-size: 11px">(because it ROARs)</i>, to:
+						</p>
+						<ol style="padding-left:2rem;">
+							<li>Recognize both the lane and patches of colored tape, placed next to the race track, as points of interest, similar to the interactive elements of Trackmania, Mario Kart, or other car racing games </li>
+							<li>Generate dynamically feasible trajectories for the RC race car to either approach or stay away from the recognized patches, as appropriate, while following the original ROAR race track (lane) </li>
+							<li>Execute control signals for the ROAR car to follow the generated trajectories with minimal error</li>
+						</ol>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Design section-->
+		<section id="design">
+			<div class="container px-2">
+				<div class="row gx-2 justify-content-left">
+					<h2>Design</h2>
+					<p >There are 2 main sides to the design of our project: <b>the hardware design</b> and <b>the software design</b>. 
+					</p>
+					<h4>Harware Design</h4>
+					<p>Because we were working on the ROAR platform, the hardware side of the setup was, for the most part, done. The harware pipeline looks as follows: </p>
+					<div class="text-center" style="margin-bottom: 0.5rem">
+						<img src="assets/car.png" width="400px">
+						<img src="assets/hardwaredesign.png" width="800px">		
+					</div>
+					<p class="par">
+					We start with our RC Car. The car has, connected to its receiver, an Arduino that can communicate directly with the car (send turn and throttle signals). We then attach an iPhone onto the car, which is running an app. Through BLE (Bluetooth Low Energy) the app communicates with the Arduino to send and receive ar signals. Finally, the app is connected to the computer by UDP websocket. This way the computer can receive camera data and vehicle information from the phone, and send back controls that go through the phone, through the Arduino, to the car to control it.
+					</p>
+					<h4>Software Design</h4>					
+					<p>On the software side of things (the bulk of our work), our first task in creating the design for this problem was to modularize it, with the final pipeline looking like this: </p>
+					<div class="text-center">
+						<img src="assets/design.png" width="1200px">
+					</div>						
+					<p class="par">
+					We decided to break the project down into 3 big modules: <b>Vision</b>, <b>Planning</b>, and <b>Control</b>. This would enable us to have barriers of abstraction such that we could tinker with different techniques at each level without causing errors in the others.</p>
+				</div>
+				<div class="subsection">
+					<h4>Vision</h4>
+					<p class="par">The Vision Module is the first in line. It takes in as input the raw sensor data from the camera and vehicle. For our purposes, we were most interested in the RGB camera data of the rear facing camera. With a fairly straightforward goal, this module has 3 tasks: </p>
+					<ol>
+						<li>Identify where the lane is (in pixel coordinates on the [1280 x 720] image)</li>
+						<li>Identify where the patches are <i>(if any)</i> (in pixel coordinates on the [1280 x 720] image)</li>
+						<li>Identify if we are currently on a patch <i>(and if so, which type)</i> (as a string that is the type of patch we are on, or None if we are not on a patch)</li>
+					</ol>
+					<p class="par">
+						Once these components have been identified, the vision module passes on the first to pieces of information to the planning module for the planning module to decide the next control. The third piece of information is sent directly to the control module, so that the control module can impose bounds on the controls to make the car behave as if though it is going over the patch it is on. 
+					</p>				
+				</div>
+				<div class="subsection">
+					<h4>Planning</h4>
+					<p class="par">As mentioned above, the planning module takes in the (x, y) coordinates of the lane, and any patches that are within the viewing distance from the perception module. Based on this information, it decides what to do next: either continue following the line or deviate from the line either to pursue a patch group or to avoid an undesirable patch group. It then passes the desired target to the control module to execute the action. </p>
+					<p class="par"> As a contingency, the planning module also has a mode called “repeat previous error”, which serves to bring back the car into the track by assuming that the lane still exists on whichever side of the car it was last seen. 
+					</p>						
+				</div>
+				<div class="subsection">
+					<h4>Control</h4>
+					<p class="par">Finally, we have the control module. This module takes in two inputs: the control command from the planning module and the "on-patch" information from the perception module. The control module then tells the car to do what the planning module told it to do, but under whatever constraints the "on-patch" information gives it. For example, if the car is going over an ice patch, the control module will not be able to send a throttle signal greater than the set amount for an ice patch for a short duration of time. This means even if the planning module dictates a faster throttle, it will be cutoff to the ice patch bound in the control module before getting sent to the car. This is an important point, because it highlights the independence of the part of our project that pursues/avoids patchs and the part of our project that changes the behavior based on patch coverage.</p>						
+				</div>
+			</div>
+		</section>
+
+		<!-- Implementation section-->
+		<section class="bg-light" id="implementation">
+			<div class="container px-2">
+				<div class="row gx-2 justify-content-left">
+						<h2>Implementation</h2>
+						<p class="lead">The code for the implementation can be found <a href="https://github.com/mohsinsarwari/ROAR" target="_blank">here</a>. The key files we worked on were:</p>
+						<ul>
+							<li><code>ROAR/agent_module/roarmania_agent.py</code></li>
+							<li><code>ROAR/perception_module/roarmania_scene_detector.py</code></li>
+							<li><code>ROAR/planning_module/roarmania_planner.py</code></li>
+							<li><code>ROAR/control_module/real_world_image_based_pid_controller.py</code></li>
+						</ul>
+						<p>We have one file per module, with the agent file connecting the three pieces together.</p>
+				</div>
+				<div class="subsection">
+					<h4>Vision</h4>
+					<p class="par">All the code for the vision module is in roarmania_scene_detector.py. The main tool used for the implementation of the vision module was OpenCV. We first converted our input image from <b>BGR</b> (Blue Green Red) to <b>HSV</b> (Hue Saturation Value) format because it is easier to set masking bounds in the latter. We then down sample our image <b>from [1280 x 720] to [256, 144]</b> for faster processing. 
+					<p class="par"> For each of the 3 tasks of the vision module, we need to look in different parts of the image. For the patches, we need to scan a large area of the ground so we can change our controls in time to pursue/avoid the patch. For the lane, we need only to look right in front of the car because we are only interested in what to do in the next timestep. In fact, if we look over a larger area, we make our detection more suceptible to missclassification because of increased noise. Finally, to see if we are on a patch, we look at a small strip of the image at the front of the car. Given these three sections, we apply masks of the appropriate colors (i.e. red and yellow for the lane, blue and white for the patches) to identify where the desired objects are (this took quite a bit of tuning). For the lane, we take the median indicies of the highlighted points in the mask as our next lane point. For the patches, we run a blob detector on the mask to find their centers (that way we can detect more than one patch at once). To see if we are on a patch, we look to see what percentage of the image is highlighted. If there is more than a certain threshold percent of the patch color in that strip, we conclude that we are going over that patch. With this information, we create a dictionary and send it to the planning module. 		
+					</p>
+					<p>All together the Vision Pipeline Looks like this:</p>
+					<div class="text-center">
+						<img src="assets/vision.png" width="1000px">
+					</div>							
+				</div>
+				<div class="subsection">
+					<h4>Planning</h4>
+					<p class="par">All the code for the planning module is in roarmania_planner.py. First, we implemented a greedy planning algorithm with two behaviors: avoid (for ice patches) and pursue (for boost patches). The planner sorts the patches  by increasing y-distance from the camera, and plans based on the closest patch. We send the lateral error between the center vertical line and the x-coordinate of the patch to the control module, making it a waypoint for the control module to follow. Importantly, we don’t change our path if we’re on the line and an icy patch is on the side, since staying on the line is enough to avoid the patch. </p>	
+					<p class="par"> Second, we implemented a smarter controller that plans with patch groups, instead of just the closest patch. After sorting patches by distance, we use some heuristics (e.g. avoid booster patches if immediately followed by icy ones, and don’t follow a booster patch upon a turn) to better represent what a real race car driver would do.
+					</p>					
+				</div>
+				<div class="subsection">
+					<h4>Control</h4>
+					<p class="par">All the code for the control module is in real_world_image_based_pid_controller.py. The controller is responsible for setting both the throttle and steering signals of the car. For this, the Control Module takes in two inputs. The first is the speed of the car as calculated by the onboard IMU on the iPhone in meters per second. We take the difference between this speed and our target speed and pass that error into our Longitudinal PID Controller, which outputs a throttle value between 0 and 1.
+					</p>
+					<p class="par">The second, and more important, input to the Control Module is the lateral offset of the desired target from the center of the car's vision in pixels (with a range of <b>[-360, 360]</b>). For example, if the desired target is a patch that is halfway between the center of the image and the right side of the image, the control module will receive 180 as the pixel offset. The control module then needs to convert this pixel offset into a steering control between <b>[-1, 1]</b>. We tried passing in the pixel offset directly into our Lateral PID controller, but tuning the PID was difficult because of the scale difference between the input error and the output control. To remidiate this, we implemented the following error scaling, to bring the error input to the PID on the same scale as the output:</p>	
+					<div class="text-center">
+						<img src="assets/errorscaling.png" width="1000px">
+					</div>			
+					<p>Quickly stepping through this process, we first divide our pixel offset by 360 (<i>norm_offset</i> in the diagram), then pass it through this <i>para-linear activation function</i>, which scales down small errors to reduce the effect of noise when the car is following the lane exactly. This is then the input to our Lateral PID function, which outputs our steering control. By scaling the error, we noticed a massive improvement in the car's lane following ability.</p>
+					<p class="par">Finally, with regards to "on-patch" behavior control, we get the information from the vision module. If the car is on a booster patch, we increase the minimum throttle the control module can send to the car for a short time. If the car is on an icy patch, we decrease the maximum throttle the control module can send to the car. These values are then set back to their defaults once the effect of the patch has worn off.</p>			
+				</div>
+			</div>
+		</section>
+
+		<!-- Results section-->
+		<section id="results">
+			<div class="container px-2">
+				<div class="row gx-2 justify-content-left">
+					<h2>Results</h2>
+					<p class="lead">And here we are! Click the videos below to see our final results.</p>
+					<p class="par">This first video is the full demonstration of our working product. The car is traversing the track, while trying to go over the white patches to get a boost, and avoid the blue patches, to avoid slowing down. </p>
+					<div class="row text-center" style="padding: 1rem;">
+						<iframe src="https://drive.google.com/file/d/1CdVEAqVycVq3DjAhlbfV7LpTQHPwqhup/preview" width="640" height="480" allow="autoplay"></iframe>
+					</div>
+					<p class="par">Here are a couple keypoints from the video:</p>
+					<ul>
+						<li>0:09: We see the car adjusting its original, straight-ahead lane following strategies in order to go across a booster patch located to the right of the lane, while avoiding an icy patch to the left. </li>
+						<li>0:11: We see the car adjust its course to across a booster patch located to the left of the lane. </li>
+						<li>0:15: We see the car moving slightly leftwards in order to avoid an icy patch to the right of the lane.</li>
+					</ul>
+					<p class="par">The next video is a short demonstration of what the computer sees while the car is running.</p>
+					<div class="row text-center" style="padding: 1rem;">
+						<iframe src="https://drive.google.com/file/d/1SkV2g_y8cyP_l9gc2smuIutyAUuLTtHB/preview" width="640" height="480" allow="autoplay"></iframe>
+					</div>
+					<p class="par">Finally, here is a short clip of what we worked on in the short time between our final demo and this report. We tried to add more interesting patch situations to the track. Here, the car decides not to go over the booster patch because it is near a turn (as going over it would cause the car to deviate quite a bit from the turn).</p>
+					<div class="row text-center" style="padding: 1rem;">
+						<iframe src="https://drive.google.com/file/d/1MzAQ1MX_Yf4T9KLOeTSrI8a6Z-N9_UOW/preview" width="640" height="480" allow="autoplay"></iframe>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Conclusions section-->
+		<section class="bg-light" id="conclusion">
+			<div class="container px-2">
+				<div class="row gx-2 justify-content-left">
+					<h2>Conclusions</h2>
+					<p class="lead">One neat thing about this project is how much further it can be taken. Here are ways we could expand in every direction if given more time:</p>
+					<div class="subsection">
+						<h4>Future Work</h4>
+						<ul>
+							<li><b style="font-size: 20px">Problem Setup</b></li>
+							<ul>
+								<li><b>Add more types of patches:</b> We would like to explore the effects of multiple types of patches on the car. An example would be “mystery” panels that could change the car’s behavior in one of many different ways, each with some probability. Another example would be “steering lock” panels that cause the car to temporarily lose control of its ability to steer, forcing it to travel in a straight line for a few seconds. We would also like to examine the effect of multiple patches at once on the car’s behavior.</li>
+								<li><b>Use more interesting tracks:</b> The race track in the Cory 337 office space was fairly benign, with a roughly rectangular shape, and mostly adequate space on both sides of the race track. It would be interesting to explore algorithms that allow the car to execute lane tracking and patch interaction behavior on race tracks that display less straightforward geometry, e.g., sharp turns, obstacles near the main track, etc.</li>
+							</ul>
+							<li><b style="font-size: 20px">Vision</b></li>
+							<ul>
+								<li><b>Robustify the patch detection pipeline:</b> Our vision module does fairly well in consistently identifying elements under constant lighting conditions, but sometimes falls prey to glare and reflections. To improve this, we could further tune the parameters for the masking of the lane and detecting of the patches.</li>
+								<li><b>Add obstacle detection:</b> Aside from avoiding undesirable patches, the race cars should also be able to detect obstacles in the vicinity of the race track, and avoid them accordingly, e.g., by executing smooth trajectories that stay at least some minimum amount of distance from each obstacle at all times. A more sophisticated obstacle detection algorithm should be able to guide the car to even avoid obstacles directly on the track, by instructing the car to temporarily abandon lane following in favor of avoiding a collision with those detected obstacles.</li>
+							</ul>
+							<li><b style="font-size: 20px">Planning</b></li>
+							<ul>
+								<li><b>Longer planning horizon:</b> By extending the planning horizon, we can enable the car to respond to appearances of newly detected patches or turns in the race track. We believe that this will result in less myopic steering behavior and thus trajectories that are smoother and more robust with respect to the presence of obstacles, or of patches associated with undesirable effects, in the car’s surroundings.</li>
+								<li><b>More sophisticated planning algorithms:</b> It would be interesting to investigate the effects of adding patches before, next to, or right after portions of the track with challenging changes in curvature, and design algorithms for the car to exhibit different behaviors at different parts of the track with similar patch configurations. We would also like to examine the effect of multiple patches at once on the car’s behavior.</li>
+								<li><b>Multi-car racing scenarios:</b> We are interested in exploring multi-agent racing scenarios, in which patches not only affect a single (“ego”) car, but also may induce identical effects on other cars sharing the same track. These other cars may be on the same or opposing team as the ego car. We are curious about the possibility of designing algorithms that urge the ego car to guide other cars on the same team towards patches that induce speed-ups or other positive effects, while forcing other cars to travel over patches that hinder their progress in the race.</li>
+							</ul>
+							<li><b style="font-size: 20px">Control</b></li>
+							<ul>
+								<li><b>Improve trajectory stability:</b> Our best PD controller at the moment works well for a certain range of car speeds, but can sometimes be either too sensitive to small errors, or not sensitive enough. At times, this causes the car to oscillate while performing lane tracking, even when the car is not running an algorithm that causes it to respond to the presence of patches. We would like to tune our PD controller better to avoid these oscillations.</li>
+								<li><b>Increase the car base speed:</b> In our project, we used different sets of tuned PID parameters for the car to execute smooth trajectories, with minimal jerk, across a wide range of nominal speeds. However, we noticed that the difficulty of the parameter tuning process increased sharply when we attempted to operate the car at increased nominal speeds. An interesting direction of future work would be to design PID parameters that are more robust with respect to different nominal car speeds. An even better result would be to obtain insight into a general framework for tuning parameters across different ranges of nominal car speeds.</li>
+							</ul>
+						</ul>
+					</div>
+					<div class="subsection">
+						<h4>Societal Implications</h4>
+						<p>
+							With regards to the practical utility of the results of our project, the expected capabilities are two-fold: 
+						</p>
+						<ol style="padding-left:2rem;">
+							<li>
+								F1 formula races attract millions of viewers worldwide each year, while car racing video games have captivated the attention of generations of aspiring computer science enthusiasts. This project proved an interesting fusion of the thrilling nature of car racing with the excitement of playing car racing video games with interactive elements
+							</li>
+							<li>
+								Our project results can also be used to enhance perception and planning for autonomous driving. In real-life scenarios, self-driving cars must often navigate complex traffic scenarios that demand a particular course of action, due to either traffic laws or human driving conventions. This is analogous to how the interactive elements we investigate in our project directly affect the dynamics of the vehicle. For example, in accordance with traffic laws, drivers in real life need to speed up or slow down when entering freeway ramps, depending on whether the ramp in question facilitates the movement of traffic entering or exiting the freeway. Thus, in the context of our project, these ramps may be interpreted as “boost” or “slow” patches in our task formulation. Meanwhile, patches of real-life roads with ice or mud are to be avoided to prevent loss of vehicle control, much as the “icy” or “muddy” patches in our project are to be avoided, since they would lead to undesirable changes in the race car dynamics.
+							</li>
+						</ol>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Team section-->
+		<section id="team" style="padding-top: 20px">
+			<div class="container">
+				<div class="row justify-content-center">
+					<h2 style="text-align:center; margin-bottom: 20px">The Team</h2>
+					<div class="row">
+						<div style="text-align:center;" class="col">
+							<img src='assets/mohsinsarwari.jpg' class="rounded-circle" width="200" height="200">
+							<p class="lead" style="margin: 0.5rem;">Mohsin Sarwari</p>
+							<p class="text-justify" style="font-size: 14px;">
+								Hi! As of Fa21, I'm a 4th year CS and Stats undergrad interested in all things Robotics. My research areas of focus lie in the overlap of Control Theory and Reinforcement Learning. For this project, I focused mainly on the Vision Module. 
+							</p>
+						</div>
+						<div style="text-align:center;" class="col">
+							<img src='assets/chihyuanchiu.png' class="rounded-circle" width="200" height="200">
+							<p class="lead" style="margin: 0.5rem;">Chih-Yuan Chiu</p>
+							<p class="text-justify" style="font-size: 14px;">
+								Hi! I'm a fourth-year EECS Ph.D. student, with background in control systems, optimization algorithms for SLAM and path planning. My main contributions were in the overall formulation of the planning tasks, acquisition of hardware and software platforms, and code in the control module.
+							</p>
+						</div>
+						<div style="text-align:center;" class="col">
+							<img src='assets/zhaodongwei.jpg' class="rounded-circle" width="200" height="200">
+							<p class="lead" style="margin: 0.5rem;">ZhaoDong Wei</p>
+							<p class="text-justify" style="font-size: 14px;">
+								Hi! As of Fa21, I'm a 1st year Meng Mechanical Engineering student with a background in reinforcement learning and optimization algorithms. I’m interested in Robotics, path planning and control systems. For this project, my main contributions were the code in the Planning Module.
+ 
+							</p>
+						</div>
+						<div style="text-align:center;" class="col">
+							<img src='assets/nimarezaeian.jpeg' class="rounded-circle" width="200" height="200">
+							<p class="lead" style="margin: 0.5rem;">Nima Rezaeian</p>
+							<p class="text-justify" style="font-size: 14px;">
+								Hi! I'm a fourth year EECS major with a background in algorithms, optimization, and system design. I'm also interested in robotics and planning. For this project, I focused on project ideation/structure, planning module, and testing.
+							</p>
+						</div>
+						<div style="text-align:center;" class="col">
+							<img src='assets/shangma.jpg' class="rounded-circle" width="200" height="200">
+							<p class="lead" style="margin: 0.5rem;">Shang Ma</p>
+							<p class="text-justify" style="font-size: 14px;">
+								Hi! As of Fa21, I'm a 1st year Meng Mechanical Engineering student with a background in automation and robotics. I am interested in robotics. For this project, I focused mainly on the Control Module and testing. 
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Footer-->
+		<footer class="py-5 bg-dark">
+			<div class="container px-4"><p class="m-0 text-center text-white">Copyright &copy; ROARmania 2021</p></div>
+		</footer>
+		<!-- Bootstrap core JS-->
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+		<!-- Core theme JS-->
+		<script src="js/scripts.js"></script>
+	</body>
+</html>
