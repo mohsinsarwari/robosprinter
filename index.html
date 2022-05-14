@@ -41,8 +41,8 @@
 			<div class="container px-2">
 				<div class="row gx-2 justify-content-left">
 					<div class="text-center">
-						<p>This website covers, in detail, the ins and outs of our final project for EECS 106A: Introduction to Robotics during the Fall 2021 semester at UC Berkeley.</p>
-						<p>Please enjoy :)</p>
+						<p>This website overviews our final project and for EECS 106B/206B: Robotic Manipulation and Interaction during the Spring 2022 semester at UC Berkeley. </p>
+						<p>For more details, please see our associated paper.</p>
 					</div>
 				</div>
 			</div>
@@ -55,242 +55,128 @@
 					<div>
 						<h2>Overview</h2>
 						<p class="par">
-							When deciding our final project, we perused through the project guidelines document to see the research and industry related options. Getting to work with the research group ROAR was the project that caught our eye. <a href="https://roar.berkeley.edu/" target="_blank">ROAR (Robot Open Autonomous Racing)</a> is a research group at Berkeley that holds an annual AI autonomous driving competition organized by the FHL ViveCenter. For each ROAR competition, student teams design perception, planning, and control algorithms to guide 1/10-scale RC race cars along a pre-specified track on the UC Berkeley campus.
+							What if anybody could run as fast as Usain Bolt? What if instead of merely replicating human performance, robotics could significantly improve human performance?
 						</p>
 						<p class="par">
-							Our main concern was that the platform for ROAR, from both the software and hardware side, was pretty well established, meaning we would have to think hard to find a way in which we could contribute to the project. Our initial proposal involved multi-agent racing. We would have two teams of two ROAR cars each race against each other around the track and we would mess with different strategies and goals to create interesting behaviors in the cars. However, given the time constraint, limited hardware, and the heavy reliance on Machine Learning, we decided that this approach was infeasible for our final project.
+							In this project, we seek to explore these possibilities, where we seek to develop the hardware and control scheme to develop fast sprinting. Until now, the majority of research has focused on improving walking efficiency or merely supplementing a human walk. We would like to go further and see if we can improve the state of the art in bipedal robotics and set a new world record in sprinting. It would be the equivalent of the ‘Deep Blue’ moment in chess. Where a machine triumphs over man for the first time. We believe robotics has achieved a state where this is possible. We seek to show that new paradigms are possible for bipedal robotics and that peak human performance can be improved with the aid of robotics. The applications span a variety of industries, from medical assistive technology, helping motor impared individuals engage in high-performance activities, to recreation, democratizing high speed sprinting for the common person.
 						</p>
-						<p class="par">
-							Instead, we stumbled upon an interesting question: what if we brought racing games like Mario Kart or Trackmania to life? Essentially, on top of racing on the lane around the track, we can add elements to the track that the cars interact with (e.g. booster patches that make the car speed up for some time). For the purposes of this project, we introduced two types of interactive elements to the track:
-						</p>
-						<ol style="padding-left:2rem;">
-							<li><b>Booster Patch</b> (represented by a white square of duct tape): Speeds up the car for a short duration of time</li>
-							<li><b>Ice Patch</b> (represented by a blue square of duct tape): Slows down the car for a short duration of time</li>
-						</ol>
-						<p>
-							Under this framework, our project fuses the design of perception, planning, and control algorithms that enable the 1/10 RC ROAR car, fondly dubbed <b>Simba</b> <i style="font-size: 11px">(because it ROARs)</i>, to:
-						</p>
-						<ol style="padding-left:2rem;">
-							<li>Recognize both the lane and patches of colored tape, placed next to the race track, as points of interest, similar to the interactive elements of Trackmania, Mario Kart, or other car racing games </li>
-							<li>Generate dynamically feasible trajectories for the RC race car to either approach or stay away from the recognized patches, as appropriate, while following the original ROAR race track (lane) </li>
-							<li>Execute control signals for the ROAR car to follow the generated trajectories with minimal error</li>
-						</ol>
 					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- Design section-->
-		<section id="design">
-			<div class="container px-2">
-				<div class="row gx-2 justify-content-left">
-					<h2>Design</h2>
-					<p >There are 2 main sides to the design of our project: <b>the hardware design</b> and <b>the software design</b>. 
-					</p>
-					<h4>Harware Design</h4>
-					<p>Because we were working on the ROAR platform, the hardware side of the setup was, for the most part, done. The harware pipeline looks as follows: </p>
-					<div class="text-center" style="margin-bottom: 0.5rem">
-						<img src="assets/car.png" width="400px">
-						<img src="assets/hardwaredesign.png" width="800px">		
-					</div>
-					<p class="par">
-					We start with our RC Car. The car has, connected to its receiver, an Arduino that can communicate directly with the car (send turn and throttle signals). We then attach an iPhone onto the car, which is running an app. Through BLE (Bluetooth Low Energy) the app communicates with the Arduino to send and receive ar signals. Finally, the app is connected to the computer by UDP websocket. This way the computer can receive camera data and vehicle information from the phone, and send back controls that go through the phone, through the Arduino, to the car to control it.
-					</p>
-					<h4>Software Design</h4>					
-					<p>On the software side of things (the bulk of our work), our first task in creating the design for this problem was to modularize it, with the final pipeline looking like this: </p>
-					<div class="text-center">
-						<img src="assets/design.png" width="1200px">
-					</div>						
-					<p class="par">
-					We decided to break the project down into 3 big modules: <b>Vision</b>, <b>Planning</b>, and <b>Control</b>. This would enable us to have barriers of abstraction such that we could tinker with different techniques at each level without causing errors in the others.</p>
-				</div>
-				<div class="subsection">
-					<h4>Vision</h4>
-					<p class="par">The Vision Module is the first in line. It takes in as input the raw sensor data from the camera and vehicle. For our purposes, we were most interested in the RGB camera data of the rear facing camera. With a fairly straightforward goal, this module has 3 tasks: </p>
-					<ol>
-						<li>Identify where the lane is (in pixel coordinates on the [1280 x 720] image)</li>
-						<li>Identify where the patches are <i>(if any)</i> (in pixel coordinates on the [1280 x 720] image)</li>
-						<li>Identify if we are currently on a patch <i>(and if so, which type)</i> (as a string that is the type of patch we are on, or None if we are not on a patch)</li>
-					</ol>
-					<p class="par">
-						Once these components have been identified, the vision module passes on the first to pieces of information to the planning module for the planning module to decide the next control. The third piece of information is sent directly to the control module, so that the control module can impose bounds on the controls to make the car behave as if though it is going over the patch it is on. 
-					</p>				
-				</div>
-				<div class="subsection">
-					<h4>Planning</h4>
-					<p class="par">As mentioned above, the planning module takes in the (x, y) coordinates of the lane, and any patches that are within the viewing distance from the perception module. Based on this information, it decides what to do next: either continue following the line or deviate from the line either to pursue a patch group or to avoid an undesirable patch group. It then passes the desired target to the control module to execute the action. </p>
-					<p class="par"> As a contingency, the planning module also has a mode called “repeat previous error”, which serves to bring back the car into the track by assuming that the lane still exists on whichever side of the car it was last seen. 
-					</p>						
-				</div>
-				<div class="subsection">
-					<h4>Control</h4>
-					<p class="par">Finally, we have the control module. This module takes in two inputs: the control command from the planning module and the "on-patch" information from the perception module. The control module then tells the car to do what the planning module told it to do, but under whatever constraints the "on-patch" information gives it. For example, if the car is going over an ice patch, the control module will not be able to send a throttle signal greater than the set amount for an ice patch for a short duration of time. This means even if the planning module dictates a faster throttle, it will be cutoff to the ice patch bound in the control module before getting sent to the car. This is an important point, because it highlights the independence of the part of our project that pursues/avoids patchs and the part of our project that changes the behavior based on patch coverage.</p>						
 				</div>
 			</div>
 		</section>
 
 		<!-- Implementation section-->
-		<section class="bg-light" id="implementation">
+		<section id="implementation">
 			<div class="container px-2">
 				<div class="row gx-2 justify-content-left">
-						<h2>Implementation</h2>
-						<p class="lead">The code for the implementation can be found <a href="https://github.com/mohsinsarwari/ROAR" target="_blank">here</a>. The key files we worked on were:</p>
-						<ul>
-							<li><code>ROAR/agent_module/roarmania_agent.py</code></li>
-							<li><code>ROAR/perception_module/roarmania_scene_detector.py</code></li>
-							<li><code>ROAR/planning_module/roarmania_planner.py</code></li>
-							<li><code>ROAR/control_module/real_world_image_based_pid_controller.py</code></li>
-						</ul>
-						<p>We have one file per module, with the agent file connecting the three pieces together.</p>
-				</div>
-				<div class="subsection">
-					<h4>Vision</h4>
-					<p class="par">All the code for the vision module is in roarmania_scene_detector.py. The main tool used for the implementation of the vision module was OpenCV. We first converted our input image from <b>BGR</b> (Blue Green Red) to <b>HSV</b> (Hue Saturation Value) format because it is easier to set masking bounds in the latter. We then down sample our image <b>from [1280 x 720] to [256, 144]</b> for faster processing. 
-					<p class="par"> For each of the 3 tasks of the vision module, we need to look in different parts of the image. For the patches, we need to scan a large area of the ground so we can change our controls in time to pursue/avoid the patch. For the lane, we need only to look right in front of the car because we are only interested in what to do in the next timestep. In fact, if we look over a larger area, we make our detection more suceptible to missclassification because of increased noise. Finally, to see if we are on a patch, we look at a small strip of the image at the front of the car. Given these three sections, we apply masks of the appropriate colors (i.e. red and yellow for the lane, blue and white for the patches) to identify where the desired objects are (this took quite a bit of tuning). For the lane, we take the median indicies of the highlighted points in the mask as our next lane point. For the patches, we run a blob detector on the mask to find their centers (that way we can detect more than one patch at once). To see if we are on a patch, we look to see what percentage of the image is highlighted. If there is more than a certain threshold percent of the patch color in that strip, we conclude that we are going over that patch. With this information, we create a dictionary and send it to the planning module. 		
+					<h2>Implementation</h2>
+					<p> When structuring the project, we decided to break it down into four significant sections: <b>gait tracking</b>, <b>mechanical work</b>, <b>electrical work</b>, and <b>control</b>.
 					</p>
-					<p>All together the Vision Pipeline Looks like this:</p>
-					<div class="text-center">
-						<img src="assets/vision.png" width="1000px">
-					</div>							
-				</div>
-				<div class="subsection">
-					<h4>Planning</h4>
-					<p class="par">All the code for the planning module is in roarmania_planner.py. First, we implemented a greedy planning algorithm with two behaviors: avoid (for ice patches) and pursue (for boost patches). The planner sorts the patches  by increasing y-distance from the camera, and plans based on the closest patch. We send the lateral error between the center vertical line and the x-coordinate of the patch to the control module, making it a waypoint for the control module to follow. Importantly, we don’t change our path if we’re on the line and an icy patch is on the side, since staying on the line is enough to avoid the patch. </p>	
-					<p class="par"> Second, we implemented a smarter controller that plans with patch groups, instead of just the closest patch. After sorting patches by distance, we use some heuristics (e.g. avoid booster patches if immediately followed by icy ones, and don’t follow a booster patch upon a turn) to better represent what a real race car driver would do.
-					</p>					
-				</div>
-				<div class="subsection">
-					<h4>Control</h4>
-					<p class="par">All the code for the control module is in real_world_image_based_pid_controller.py. The controller is responsible for setting both the throttle and steering signals of the car. For this, the Control Module takes in two inputs. The first is the speed of the car as calculated by the onboard IMU on the iPhone in meters per second. We take the difference between this speed and our target speed and pass that error into our Longitudinal PID Controller, which outputs a throttle value between 0 and 1.
+
+					<h4>Gait Tracking</h4>
+					<p  class="par">The first part of our implementation involves getting the desired behavior our exoskeleton is going to imitate. After deliberating what method would be best to parameterize a gait, we decided to accomplish this by getting the angle at the hip and knee, respectively, over time during a sprint. If we could get these functions, we could also get their derivatives, which would give us sufficient To get these angle profiles, we used computer vision to analyze a video of someone sprinting and extract out the change in angle over time of the knee and hip joints. We utilized the BlazePose package within the MediaPipe Neural Network to analyze images and estimate the position of body joints. The Mediapipe package, extensively tested and trained by Google, enables the use of pre-trained pose estimation to help us identify a set of 28 points on the body for each frame. This allowed us to collect information about the unencumbered, natural gait of individuals without sensors. From these points, we extracted out the ones relevant to the knee and hip angle to help us determine precise values. </p>
+					<div class="text-center" style="margin-bottom: 0.5rem">
+						<img src="assets/pose.png" width="400px">	
+					</div>
+					<p  class="par">The raw angles generated from the video resulted in the following data:</p>
+					<div class="text-center" style="margin-bottom: 0.5rem">
+						<img src="assets/gait_raw.png" width="400px">		
+					</div>
+					<p  class="par">As can be seen above, the angles extracted from the video footage contain a lot of noise and some mislabeled points (the pose estimator switched the left and right legs). To smooth out our data, we filtered out outlier points, as no angle should shift significantly between two adjacent frames, and took a moving average of width 3 to help reduce the effect of noise. Finally, with the filtered and smoothed data, we need to fit a function to the data. For the sake of simplicity, we fit a sine of the form Asin(wt+p)+c to each of the joints. From this method, we get the following fitted lines:
 					</p>
-					<p class="par">The second, and more important, input to the Control Module is the lateral offset of the desired target from the center of the car's vision in pixels (with a range of <b>[-360, 360]</b>). For example, if the desired target is a patch that is halfway between the center of the image and the right side of the image, the control module will receive 180 as the pixel offset. The control module then needs to convert this pixel offset into a steering control between <b>[-1, 1]</b>. We tried passing in the pixel offset directly into our Lateral PID controller, but tuning the PID was difficult because of the scale difference between the input error and the output control. To remidiate this, we implemented the following error scaling, to bring the error input to the PID on the same scale as the output:</p>	
+					<div class="text-center" style="margin-bottom: 0.5rem">
+						<img src="assets/gait_final.png" width="400px">		
+					</div>
+					<p class="par">
+					We then save the parameters (A, w, p, and c) for each joint and then feed those into our controller, which is discussed in a later section. 
+					</p>
+
+					<h4>Mechanical Design</h4>					
+					<p  class="par">In most of robotics applications, gear reducers are essential to amplify the output torque. However, they are known to be expensive and heavy. One of the key aspect of this project in terms of mechanical design is the use of ball screw linear actuator with brush-less motor. As mentioned above, similar design has been seen in a robotics application such as the Spot robot from Boston dynamics. The ball screw converts the rotational motor from the motor into linear reciprocating motion. The biggest advantage of such design consideration is the high gear reduction ratio resulted by motor spinning at high speed with proper pitch setting of the ball screw. Compared with the original output torque of the motor, the high gear ratio amplifies the output thrust force on the ball screw which exerts the proper torque towards the body joints of the exoskeleton. This design eliminates the need for gear reducer which reduced the cost of complexity of the system. As a comparison, the actuation system on MIT Cheetah would cost 300 dollar with only 250 watts output. The actuation system in this project only cost $60 (including the ball screw) with 1350 watts peak power output, which is about 5 times lower in cost and 5 times more powerful.</p>
+					<p  class="par">In most of robotics applications, gear reducers are essential to amplify the output torque. However, they are known to be expensive and heavy. One of the key aspect of this project in terms of mechanical design is the use of ball screw linear actuator with brush-less motor. As mentioned above, similar design has been seen in a robotics application such as the Spot robot from Boston dynamics. The ball screw converts the rotational motor from the motor into linear reciprocating motion. The biggest advantage of such design consideration is the high gear reduction ratio resulted by motor spinning at high speed with proper pitch setting of the ball screw. Compared with the original output torque of the motor, the high gear ratio amplifies the output thrust force on the ball screw which exerts the proper torque towards the body joints of the exoskeleton. This design eliminates the need for gear reducer which reduced the cost of complexity of the system. As a comparison, the actuation system on MIT Cheetah would cost 300 dollar with only 250 watts output. The actuation system in this project only cost $60 (including the ball screw) with 1350 watts peak power output, which is about 5 times lower in cost and 5 times more powerful.</p>
+					<p  class="par">As mentioned above, this design also allows us to position the actuation system of the calf assembly relatively close  to the hip joint, in order to reduce the rotational inertia of the thigh assembly. One notable characteristics of ball screw is its back-drivability. When the motor is not powered, the motion from the leg is able to drive the motor into rotational motion via the linear motion. This feature adds the compliance to the system. As shown below, the link bar system consists of 3 revolute joints and 1 prismatic joint. The first joint represents the hip joint, the second joint works as a lever to push and rotate the hip joint, and the third joint provides additional degree of freedom to the linear actuation. When motor starts to spin in counterclockwise direction (viewed from motor's top perspective), the ball screw nut will travel downwards and vice versa.The second joint is connected with the ball screw nut and travels in an arc trajectory to drive the hip joint and the corresponding thigh beam to rotate. The thigh follows the motion with the help of the fixture bar on thigh beam. Same design are used for both thigh and calf motion, the major difference is that the actuation for thigh is mounted on the waist level while the actuation for calf is mounted on the corresponding thigh.</p>
 					<div class="text-center">
-						<img src="assets/errorscaling.png" width="1000px">
-					</div>			
-					<p>Quickly stepping through this process, we first divide our pixel offset by 360 (<i>norm_offset</i> in the diagram), then pass it through this <i>para-linear activation function</i>, which scales down small errors to reduce the effect of noise when the car is following the lane exactly. This is then the input to our Lateral PID function, which outputs our steering control. By scaling the error, we noticed a massive improvement in the car's lane following ability.</p>
-					<p class="par">Finally, with regards to "on-patch" behavior control, we get the information from the vision module. If the car is on a booster patch, we increase the minimum throttle the control module can send to the car for a short time. If the car is on an icy patch, we decrease the maximum throttle the control module can send to the car. These values are then set back to their defaults once the effect of the patch has worn off.</p>			
+						<img src="assets/Joint_images.png" width="400px">
+					</div>						
+					<p class="par">
+					The mechanical design enabled the linear operation of control between the motor revolution and the hip rotation. The drive system system consists of a tilted four-bar linkage with the linear ball  screw representing one variable length linkage as seen in above. This made kinematics somewhat challenging, but with proper design, we can have mostly perpendicular force application to the hip joint over the range of motion. To simplify the design, we can reduce the four bar linkage to a three-bar linkage with the ball screw linkage is fixed perpendicular to the first linkage. We can align the axis of travel of the ball screw to pass the hip joint tangentially. As a result, a linear extension in ball screw length (through the rotation of the motor), will elongate the linkage in a tangential direction to the axis of rotation. Therefore, motor rotations at the ball screw will approximately correspond to a fixed increase in angle at the hip and knee joints. Through this design , we were able to achieve a very linearized output as seen below. The design allowed an even torque band for the motor so that the amount of torque required by the motor was roughly even throughout through the entire range of motion. The velocity based control system could also be easily implemented.</p>
+					<div class="text-center">
+						<img src="assets/Linearized_output.png" width="400px">
+					</div>	
+					<h4>Electrical Design</h4>					
+					<p  class="par">A key element of the electrical design was the enable the control of the powerful, inexpensive brushless motors. These motors operate at high speeds that can exceed 10,000 rotations per minute [RPM] and achieve peak power and efficiency at these higher RPM ranges. The initial design made use of electromagnetic field feedback from the brushless motor as a form of feedback control. However this proved to have poor low speed performance so an external high speed magnetic encoder was introduced. Unlike many other types of encoders, these non-contact encoders are capable of spinning and reading signals at the high speeds required in this application. A block diagram of the electrical layout can be seen below. The power flows from a Lithium Polymer battery capable of supplying 24 volts at 200 amps. The encoder feedback is captured by the high speed dual axis motor controller through a high speed Serial Peripheral Interface (SPI) lines.</p>
+					<div class="text-center">
+						<img src="assets/diagram.png" width="1200px">
+					</div>
+					
+					<h4>Control</h4>					
+					<p  class="par">Finally, we turn to using our desired trajectory with the mechanical and electrical structure of our exoskeleton to drive the motors to perform the sprint. During the time of this project, because of shipping delays, we were unable to get our hands onto encoders for the motors, so, we were unfortunately forced to use velocity control instead of more desirable position control. To overcome this, we took the derivative of our fitted trajectory and, using the linearization referenced in linearized output image above, converted our desired joint velocity into motor revolutions per second (as a function of time). This gave us our feed forward input for the built in velocity controller on the ODrive that allowed us to move both motors in sync with the gait.  </p>					
 				</div>
 			</div>
 		</section>
 
 		<!-- Results section-->
-		<section id="results">
+		<section class="bg-light" id="results">
 			<div class="container px-2">
 				<div class="row gx-2 justify-content-left">
 					<h2>Results</h2>
-					<p class="lead">And here we are! Click the videos below to see our final results.</p>
-					<p class="par">This first video is the full demonstration of our working product. The car is traversing the track, while trying to go over the white patches to get a boost, and avoid the blue patches, to avoid slowing down. </p>
+					<p class="par">While most of our implementation was in hardware, the software this project used can be found <a target="_blank" href="https://github.com/mohsinsarwari/RobosprinterCode">here</a>. Often expected with hardware implementations of theoretical ideas, our build ended up much more unstable than expected. Below is the video of the best performance we were able to get out of our build: </p>
 					<div class="row text-center" style="padding: 1rem;">
-						<iframe src="https://drive.google.com/file/d/1CdVEAqVycVq3DjAhlbfV7LpTQHPwqhup/preview" width="640" height="480" allow="autoplay"></iframe>
+						<iframe src="https://drive.google.com/file/d/1cbANCf5pagJfz3qQpZA3zTgw_enX0NN8/preview" width="640" height="480" allow="autoplay"></iframe>
 					</div>
-					<p class="par">Here are a couple keypoints from the video:</p>
-					<ul>
-						<li>0:09: We see the car adjusting its original, straight-ahead lane following strategies in order to go across a booster patch located to the right of the lane, while avoiding an icy patch to the left. </li>
-						<li>0:11: We see the car adjust its course to across a booster patch located to the left of the lane. </li>
-						<li>0:15: We see the car moving slightly leftwards in order to avoid an icy patch to the right of the lane.</li>
-					</ul>
-					<p class="par">The next video is a short demonstration of what the computer sees while the car is running.</p>
-					<div class="row text-center" style="padding: 1rem;">
-						<iframe src="https://drive.google.com/file/d/1SkV2g_y8cyP_l9gc2smuIutyAUuLTtHB/preview" width="640" height="480" allow="autoplay"></iframe>
-					</div>
-					<p class="par">Finally, here is a short clip of what we worked on in the short time between our final demo and this report. We tried to add more interesting patch situations to the track. Here, the car decides not to go over the booster patch because it is near a turn (as going over it would cause the car to deviate quite a bit from the turn).</p>
-					<div class="row text-center" style="padding: 1rem;">
-						<iframe src="https://drive.google.com/file/d/1MzAQ1MX_Yf4T9KLOeTSrI8a6Z-N9_UOW/preview" width="640" height="480" allow="autoplay"></iframe>
-					</div>
+					<p>For a more in-depth analysis of our project, please view our paper <a target="_blank" href="assets/paper.pdf">here</a></p>
 				</div>
 			</div>
 		</section>
 
 		<!-- Conclusions section-->
-		<section class="bg-light" id="conclusion">
+		<section id="conclusion">
 			<div class="container px-2">
 				<div class="row gx-2 justify-content-left">
 					<h2>Conclusions</h2>
-					<p class="lead">One neat thing about this project is how much further it can be taken. Here are ways we could expand in every direction if given more time:</p>
+					<p class="par">In doing this project, we have learned a lot about the process of implementing a research idea. While the theory aspect of the project went by relatively smoothly, we learned that bringing an idea to life brings about a whole host of issues. From part delays and bugs to the difficutly of precise manufacturing, building the exoskeleton gave us a massive increase in experience in making a design a reality. Over the last three weeks, we have managed to show that an exoskeleton able to increase max human running speed is not only possible, but can be done with relatively low cost. Nonetheless, a lot of work remains to be done to turn our pieces of implementation into a full picture.</p>
 					<div class="subsection">
 						<h4>Future Work</h4>
 						<ul>
-							<li><b style="font-size: 20px">Problem Setup</b></li>
-							<ul>
-								<li><b>Add more types of patches:</b> We would like to explore the effects of multiple types of patches on the car. An example would be “mystery” panels that could change the car’s behavior in one of many different ways, each with some probability. Another example would be “steering lock” panels that cause the car to temporarily lose control of its ability to steer, forcing it to travel in a straight line for a few seconds. We would also like to examine the effect of multiple patches at once on the car’s behavior.</li>
-								<li><b>Use more interesting tracks:</b> The race track in the Cory 337 office space was fairly benign, with a roughly rectangular shape, and mostly adequate space on both sides of the race track. It would be interesting to explore algorithms that allow the car to execute lane tracking and patch interaction behavior on race tracks that display less straightforward geometry, e.g., sharp turns, obstacles near the main track, etc.</li>
-							</ul>
-							<li><b style="font-size: 20px">Vision</b></li>
-							<ul>
-								<li><b>Robustify the patch detection pipeline:</b> Our vision module does fairly well in consistently identifying elements under constant lighting conditions, but sometimes falls prey to glare and reflections. To improve this, we could further tune the parameters for the masking of the lane and detecting of the patches.</li>
-								<li><b>Add obstacle detection:</b> Aside from avoiding undesirable patches, the race cars should also be able to detect obstacles in the vicinity of the race track, and avoid them accordingly, e.g., by executing smooth trajectories that stay at least some minimum amount of distance from each obstacle at all times. A more sophisticated obstacle detection algorithm should be able to guide the car to even avoid obstacles directly on the track, by instructing the car to temporarily abandon lane following in favor of avoiding a collision with those detected obstacles.</li>
-							</ul>
-							<li><b style="font-size: 20px">Planning</b></li>
-							<ul>
-								<li><b>Longer planning horizon:</b> By extending the planning horizon, we can enable the car to respond to appearances of newly detected patches or turns in the race track. We believe that this will result in less myopic steering behavior and thus trajectories that are smoother and more robust with respect to the presence of obstacles, or of patches associated with undesirable effects, in the car’s surroundings.</li>
-								<li><b>More sophisticated planning algorithms:</b> It would be interesting to investigate the effects of adding patches before, next to, or right after portions of the track with challenging changes in curvature, and design algorithms for the car to exhibit different behaviors at different parts of the track with similar patch configurations. We would also like to examine the effect of multiple patches at once on the car’s behavior.</li>
-								<li><b>Multi-car racing scenarios:</b> We are interested in exploring multi-agent racing scenarios, in which patches not only affect a single (“ego”) car, but also may induce identical effects on other cars sharing the same track. These other cars may be on the same or opposing team as the ego car. We are curious about the possibility of designing algorithms that urge the ego car to guide other cars on the same team towards patches that induce speed-ups or other positive effects, while forcing other cars to travel over patches that hinder their progress in the race.</li>
-							</ul>
+							<li><b style="font-size: 20px">Gait Tracking</b></li>
+								<p  class="par">On the gait tracking front, the key form of improvement would be using more complex functions to fit the data rather than a simple sine. One way of achieving this would be to fit a linear combination of a set number of sinusoidal functions. Because we know the gait is periodic, we can use a Fourier Transform to make an accurate approximation of the signal for each of the joints, taking into account any asymmetries that may exist within one stride. Additionally, we worked under the assumption that both legs followed the same gait. When fitting this to an individual to try, it would be important to map the gait of the left and right separately to get the controller to be as accurate to the person's natural gait as possible. Finally, as the intention of this project was to be able to run a full sprint, we would need to gather data for the first kick-off phase of the sprint and fit a model to that as well.</p>
+							<li><b style="font-size: 20px">Mechanical Design</b></li>
+								<p  class="par">For future work, we would like to incorporate more safety features at the joints such as hard stops that wouldn't allow the extension. One of the big fears currently, with regards to safety, is the damage the exoskeleton could do to the wearer if the wearer falls. We would need add rounded edges and perhaps encase the exoskeleton in a softer material to make contact between the wearer and the device less dangerous. We would also like to increase the rigidity of the device since skeleton frame shifts over time due to the mechanical stresses exerted by the drive train. The power transfer would also increase by improving the rigidity of the frame and joints. Adding a degree of freedom to allow more side to side movement would also help with mobility.</p>
+							<li><b style="font-size: 20px">Electrical Design</b></li>
+								<p  class="par">As referenced throughout this piece, the exoskeleton device could be greatly improved through the use of high speed encoders at the motor and also the joint. This would give us the data necessary to perform high precision position feedback control and would allow us to implement even fancier feedback controllers. Additionally, these encoders could be used to increase the safety of the device, a topic not addressed in our research thus far, checking to make sure these joint limits and velocities are within reasonable bounds to prevent the over-extension of joints. With encoder readings, a way to ensure safety would be to have an emergency stop that triggers if the motors draw too much current or veer outside of the safety bounds with regards to position or velocity. In these instances, we could hand back control to the wearer as the ball screw motors are back-drivable. </p>
 							<li><b style="font-size: 20px">Control</b></li>
-							<ul>
-								<li><b>Improve trajectory stability:</b> Our best PD controller at the moment works well for a certain range of car speeds, but can sometimes be either too sensitive to small errors, or not sensitive enough. At times, this causes the car to oscillate while performing lane tracking, even when the car is not running an algorithm that causes it to respond to the presence of patches. We would like to tune our PD controller better to avoid these oscillations.</li>
-								<li><b>Increase the car base speed:</b> In our project, we used different sets of tuned PID parameters for the car to execute smooth trajectories, with minimal jerk, across a wide range of nominal speeds. However, we noticed that the difficulty of the parameter tuning process increased sharply when we attempted to operate the car at increased nominal speeds. An interesting direction of future work would be to design PID parameters that are more robust with respect to different nominal car speeds. An even better result would be to obtain insight into a general framework for tuning parameters across different ranges of nominal car speeds.</li>
-							</ul>
+								<p  class="par">With high speed encoders, we could increase the complexity of our controller. While our current implementation did not incorporate feedback, we could use sensor readings for a PID position controller. By using a position controller, we would ensure that the motor reaches the desired positions even under variable load. The feedback element would increase the accuracy with which each stride is conducted. </p>
 						</ul>
-					</div>
-					<div class="subsection">
-						<h4>Societal Implications</h4>
-						<p>
-							With regards to the practical utility of the results of our project, the expected capabilities are two-fold: 
-						</p>
-						<ol style="padding-left:2rem;">
-							<li>
-								F1 formula races attract millions of viewers worldwide each year, while car racing video games have captivated the attention of generations of aspiring computer science enthusiasts. This project proved an interesting fusion of the thrilling nature of car racing with the excitement of playing car racing video games with interactive elements
-							</li>
-							<li>
-								Our project results can also be used to enhance perception and planning for autonomous driving. In real-life scenarios, self-driving cars must often navigate complex traffic scenarios that demand a particular course of action, due to either traffic laws or human driving conventions. This is analogous to how the interactive elements we investigate in our project directly affect the dynamics of the vehicle. For example, in accordance with traffic laws, drivers in real life need to speed up or slow down when entering freeway ramps, depending on whether the ramp in question facilitates the movement of traffic entering or exiting the freeway. Thus, in the context of our project, these ramps may be interpreted as “boost” or “slow” patches in our task formulation. Meanwhile, patches of real-life roads with ice or mud are to be avoided to prevent loss of vehicle control, much as the “icy” or “muddy” patches in our project are to be avoided, since they would lead to undesirable changes in the race car dynamics.
-							</li>
-						</ol>
 					</div>
 				</div>
 			</div>
 		</section>
 
 		<!-- Team section-->
-		<section id="team" style="padding-top: 20px">
+		<section id="team" class="bg-light" style="padding-top: 20px">
 			<div class="container">
 				<div class="row justify-content-center">
 					<h2 style="text-align:center; margin-bottom: 20px">The Team</h2>
 					<div class="row">
 						<div style="text-align:center;" class="col">
-							<img src='assets/mohsinsarwari.jpg' class="rounded-circle" width="200" height="200">
-							<p class="lead" style="margin: 0.5rem;">Mohsin Sarwari</p>
+							<img src='assets/sagarpatel.png' class="rounded-circle" width="200" height="200">
+							<p class="lead" style="margin: 0.5rem;">Sagar Patel</p>
 							<p class="text-justify" style="font-size: 14px;">
-								Hi! As of Fa21, I'm a 4th year CS and Stats undergrad interested in all things Robotics. My research areas of focus lie in the overlap of Control Theory and Reinforcement Learning. For this project, I focused mainly on the Vision Module. 
-							</p>
-						</div>
-						<div style="text-align:center;" class="col">
-							<img src='assets/chihyuanchiu.png' class="rounded-circle" width="200" height="200">
-							<p class="lead" style="margin: 0.5rem;">Chih-Yuan Chiu</p>
-							<p class="text-justify" style="font-size: 14px;">
-								Hi! I'm a fourth-year EECS Ph.D. student, with background in control systems, optimization algorithms for SLAM and path planning. My main contributions were in the overall formulation of the planning tasks, acquisition of hardware and software platforms, and code in the control module.
-							</p>
-						</div>
-						<div style="text-align:center;" class="col">
-							<img src='assets/zhaodongwei.jpg' class="rounded-circle" width="200" height="200">
-							<p class="lead" style="margin: 0.5rem;">ZhaoDong Wei</p>
-							<p class="text-justify" style="font-size: 14px;">
-								Hi! As of Fa21, I'm a 1st year Meng Mechanical Engineering student with a background in reinforcement learning and optimization algorithms. I’m interested in Robotics, path planning and control systems. For this project, my main contributions were the code in the Planning Module.
- 
-							</p>
-						</div>
-						<div style="text-align:center;" class="col">
-							<img src='assets/nimarezaeian.jpeg' class="rounded-circle" width="200" height="200">
-							<p class="lead" style="margin: 0.5rem;">Nima Rezaeian</p>
-							<p class="text-justify" style="font-size: 14px;">
-								Hi! I'm a fourth year EECS major with a background in algorithms, optimization, and system design. I'm also interested in robotics and planning. For this project, I focused on project ideation/structure, planning module, and testing.
+								Hi! I’m finishing my robotics M.Eng Electrical Engineering and Computer Science at U.C. Berkeley. I previously founded a venture backed hardware startup, and worked in a variety of robotics jobs in industry - including the development of advanced end effectors for semiconductor robots. I enjoy working on new areas of robotics research with a strong applicative potential - medical or environmental robotics.
 							</p>
 						</div>
 						<div style="text-align:center;" class="col">
 							<img src='assets/shangma.jpg' class="rounded-circle" width="200" height="200">
 							<p class="lead" style="margin: 0.5rem;">Shang Ma</p>
 							<p class="text-justify" style="font-size: 14px;">
-								Hi! As of Fa21, I'm a 1st year Meng Mechanical Engineering student with a background in automation and robotics. I am interested in robotics. For this project, I focused mainly on the Control Module and testing. 
+								Hi! I am a MEng student majoring in Mechanical Engineering at UC Berkeley. I previously worked as a mechanical engineer in a robotics startup, mainly focusing on the end-effectors of the robotic arms. I like designing, assembling, hacking, and coding robots. I am most interested in the application of robotics in logistics and also personal everyday robots.
+							</p>
+						</div>
+						<div style="text-align:center;" class="col">
+							<img src='assets/mohsinsarwari.jpg' class="rounded-circle" width="200" height="200">
+							<p class="lead" style="margin: 0.5rem;">Mohsin Sarwari</p>
+							<p class="text-justify" style="font-size: 14px;">
+								Hi! I’m in my final semester as an undergraduate student majoring in Computer Science and Statistics. I’ve taken the 106A, 221A, and 222 and currently work in Professor Sastry’s lab group. While most areas of Robotics interest me, I like to primarily focus on the overlap of control theory and reinforcement learning (using RL to better learn controllers for complex systems).
 							</p>
 						</div>
 					</div>
@@ -300,7 +186,7 @@
 
 		<!-- Footer-->
 		<footer class="py-5 bg-dark">
-			<div class="container px-4"><p class="m-0 text-center text-white">Copyright &copy; ROARmania 2021</p></div>
+			<div class="container px-4"><p class="m-0 text-center text-white">Copyright &copy; Robosprinter 2022</p></div>
 		</footer>
 		<!-- Bootstrap core JS-->
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
